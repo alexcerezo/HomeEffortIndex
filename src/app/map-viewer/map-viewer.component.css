@@ -12,6 +12,19 @@
   min-height: 100vh;
 }
 
+/* Eliminar cualquier outline o borde en elementos del mapa */
+:host ::ng-deep .leaflet-interactive {
+  outline: none !important;
+}
+
+:host ::ng-deep .leaflet-interactive:focus {
+  outline: none !important;
+}
+
+:host ::ng-deep path {
+  outline: none !important;
+}
+
 :host ::ng-deep .province-tooltip {
   background-color: rgba(0, 0, 0, 0.8);
   border: none;

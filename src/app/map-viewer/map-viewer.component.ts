@@ -18,26 +18,36 @@ export class MapViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   public isLoading = false;
   public loadingMessage = '';
   public featureCount = 0;
-  public currentZoom = 4;
+  public currentZoom = 3;
 
   constructor(@Inject(PLATFORM_ID) private platformId: object) {}
 
   ngOnInit(): void {}
 
   async ngAfterViewInit(): Promise<void> {
+    console.log('=== ngAfterViewInit iniciado ===');
     // Solo ejecutar en el navegador, no en el servidor
     if (isPlatformBrowser(this.platformId)) {
-      // Importar Leaflet dinámicamente solo en el navegador
-      const leafletModule = await import('leaflet');
-      this.L = leafletModule.default || leafletModule;
+      console.log('Plataforma: Navegador');
       
-      // Fix para los iconos de Leaflet
-      delete (this.L.Icon.Default.prototype as any)._getIconUrl;
-      this.L.Icon.Default.mergeOptions({
-        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-      });
+      // Pequeña espera para asegurar que el DOM esté listo
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Importar Leaflet dinámicamente solo en el navegador
+      if (!this.L) {
+        console.log('Importando Leaflet...');
+        const leafletModule = await import('leaflet');
+        this.L = leafletModule.default || leafletModule;
+        
+        // Fix para los iconos de Leaflet
+        delete (this.L.Icon.Default.prototype as any)._getIconUrl;
+        this.L.Icon.Default.mergeOptions({
+          iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+          iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+          shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+        });
+        console.log('Leaflet importado correctamente');
+      }
       
       this.initializeMap();
       this.loadGeoJSON();
@@ -63,43 +73,67 @@ export class MapViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private initializeMap(): void {
-    console.log('Inicializando mapa...');
+    console.log('=== Inicializando mapa ===');
+    
+    // Verificar que Leaflet esté cargado
+    if (!this.L) {
+      console.error('Leaflet no está cargado!');
+      return;
+    }
     
     // Limpiar el contenedor del mapa si ya existe un mapa previo
     const mapContainer = document.getElementById('map');
-    if (mapContainer) {
+    if (!mapContainer) {
+      console.error('No se encuentra el elemento #map');
+      return;
+    }
+    
+    console.log('Contenedor del mapa encontrado');
+    
+    // Limpiar completamente el contenedor
+    if ((mapContainer as any)._leaflet_id) {
+      console.log('Limpiando mapa anterior...');
       mapContainer.innerHTML = '';
-      (mapContainer as any)._leaflet_id = null;
+      delete (mapContainer as any)._leaflet_id;
     }
     
     // Si ya existe un mapa, destruirlo primero
     if (this.map) {
-      this.map.off();
-      this.map.remove();
+      console.log('Destruyendo instancia de mapa anterior...');
+      try {
+        this.map.off();
+        this.map.remove();
+      } catch (e) {
+        console.warn('Error al destruir mapa anterior:', e);
+      }
       this.map = null;
     }
     
     // Definir límites de Europa (aproximados, sin incluir regiones árticas extremas)
     const europeBounds = this.L.latLngBounds(
-      this.L.latLng(34.0, -12.0), // Suroeste (cerca de Gibraltar)
-      this.L.latLng(71.0, 40.0)   // Noreste (cerca del norte de Noruega)
+      this.L.latLng(30.0, -12.0), // Suroeste (cerca de Gibraltar)
+      this.L.latLng(75.0, 40.0)   // Noreste (cerca del norte de Noruega)
     );
     
-    // Inicializar el mapa centrado en Europa con más zoom
+    console.log('Creando nueva instancia del mapa...');
+    // Inicializar el mapa centrado en Europa con menos zoom
     this.map = this.L.map('map', {
       center: [50.0, 10.0], // Centro de Europa
-      zoom: 5,              // Más zoom inicial (era 4)
-      minZoom: 4,           // Zoom mínimo aumentado (era 3)
+      zoom: 4.5,            // Zoom inicial con decimales
+      minZoom: 3.75,        // Zoom mínimo con decimales
       maxZoom: 8,           // Zoom máximo
       maxBounds: europeBounds, // Límites del mapa
-      maxBoundsViscosity: 1.0, // Hace que los límites sean "duros"
+      maxBoundsViscosity: 1, // Hace que los límites sean "duros"
+      zoomSnap: 0.25,       // Permite zoom en incrementos de 0.25 para suavidad
+      zoomDelta: 1,         // Los botones +/- cambian de 1 en 1 (normal)
+      wheelPxPerZoomLevel: 30, // Zoom con rueda más rápido (por defecto es 60, menor = más rápido)
       zoomControl: true,
       attributionControl: false
     });
 
     console.log('Mapa creado:', this.map);
 
-    // NO añadimos mapa base - solo fondo gris
+    // NO añadimos mapa base - solo fondo azul
   }
 
   private async loadGeoJSON(): Promise<void> {
@@ -144,9 +178,9 @@ export class MapViewerComponent implements OnInit, AfterViewInit, OnDestroy {
     return {
       fillColor: this.provinceColors.get(provinceId),
       fillOpacity: 0.7,
-      color: '#ffffff', // Color del borde
-      weight: 1,
-      opacity: 1
+      color: this.provinceColors.get(provinceId), // Sin borde blanco, usa el mismo color
+      weight: 0.5,      // Borde muy fino
+      opacity: 0.8
     };
   }
 
@@ -182,16 +216,14 @@ export class MapViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   private highlightFeature(e: any): void {
     const layer = e.target;
     
+    // Resaltado sutil solo aumentando opacidad, sin traer al frente
     layer.setStyle({
-      weight: 3,
-      color: '#666',
-      fillOpacity: 0.9
+      fillOpacity: 0.95
     });
-
-    layer.bringToFront();
   }
 
   private resetHighlight(e: any): void {
+    // Simplemente restaurar usando el layer GeoJSON
     if (this.geoJsonLayer) {
       this.geoJsonLayer.resetStyle(e.target);
     }
@@ -199,15 +231,19 @@ export class MapViewerComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private onProvinceClick(e: any): void {
     const feature = e.target.feature;
+    const layer = e.target;
     const provinceName = feature.properties?.NUTS_NAME || 
                         feature.properties?.name || 
                         'Región desconocida';
     
     console.log('Provincia clickeada:', provinceName, feature.properties);
     
-    // Aquí puedes añadir más funcionalidad, como mostrar un panel con información
+    // Zoom suave a la provincia sin modificar estilos
     if (this.map) {
-      this.map.fitBounds(e.target.getBounds());
+      this.map.fitBounds(layer.getBounds(), {
+        padding: [50, 50],
+        maxZoom: 7
+      });
     }
   }
 }
