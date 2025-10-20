@@ -13,6 +13,12 @@ export class MapViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   private L: any = null;
   private geoJsonLayer: any = null;
   private provinceColors = new Map<string, string>();
+  
+  // Variables públicas para el template
+  public isLoading = false;
+  public loadingMessage = '';
+  public featureCount = 0;
+  public currentZoom = 4;
 
   constructor(@Inject(PLATFORM_ID) private platformId: object) {}
 
@@ -39,29 +45,61 @@ export class MapViewerComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    if (this.map) {
-      this.map.remove();
+    // Limpiar el layer GeoJSON
+    if (this.geoJsonLayer && this.map) {
+      this.map.removeLayer(this.geoJsonLayer);
+      this.geoJsonLayer = null;
     }
+    
+    // Limpiar el mapa completamente
+    if (this.map) {
+      this.map.off();
+      this.map.remove();
+      this.map = null;
+    }
+    
+    // Limpiar el cache de colores
+    this.provinceColors.clear();
   }
 
   private initializeMap(): void {
     console.log('Inicializando mapa...');
     
-    // Inicializar el mapa centrado en Europa
+    // Limpiar el contenedor del mapa si ya existe un mapa previo
+    const mapContainer = document.getElementById('map');
+    if (mapContainer) {
+      mapContainer.innerHTML = '';
+      (mapContainer as any)._leaflet_id = null;
+    }
+    
+    // Si ya existe un mapa, destruirlo primero
+    if (this.map) {
+      this.map.off();
+      this.map.remove();
+      this.map = null;
+    }
+    
+    // Definir límites de Europa (aproximados, sin incluir regiones árticas extremas)
+    const europeBounds = this.L.latLngBounds(
+      this.L.latLng(34.0, -12.0), // Suroeste (cerca de Gibraltar)
+      this.L.latLng(71.0, 40.0)   // Noreste (cerca del norte de Noruega)
+    );
+    
+    // Inicializar el mapa centrado en Europa con más zoom
     this.map = this.L.map('map', {
       center: [50.0, 10.0], // Centro de Europa
-      zoom: 4,
+      zoom: 5,              // Más zoom inicial (era 4)
+      minZoom: 4,           // Zoom mínimo aumentado (era 3)
+      maxZoom: 8,           // Zoom máximo
+      maxBounds: europeBounds, // Límites del mapa
+      maxBoundsViscosity: 1.0, // Hace que los límites sean "duros"
       zoomControl: true,
       attributionControl: false
     });
 
     console.log('Mapa creado:', this.map);
 
-    // Añadir un mapa base para visualización (temporal para debug)
-    this.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      opacity: 0.3 // Baja opacidad para que el foco esté en las provincias
-    }).addTo(this.map);
+    // NO añadimos mapa base - solo fondo gris
   }
 
   private async loadGeoJSON(): Promise<void> {
