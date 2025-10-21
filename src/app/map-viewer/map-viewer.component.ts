@@ -80,8 +80,14 @@ export class MapViewerComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
+    // Filtrar solo las regiones NUTS 2 (LEVL_CODE === 2)
+    const nuts2Data = {
+      ...data,
+      features: data.features.filter((feature: any) => feature.properties?.LEVL_CODE === 2)
+    };
+
     this.canvasRenderer = this.L.canvas({ padding: 1 });
-    this.geojson = this.L.geoJSON(data, {
+    this.geojson = this.L.geoJSON(nuts2Data, {
       renderer: this.canvasRenderer,
       style: (feature: any) => this.style(feature),
       onEachFeature: (feature: any, layer: any) => this.onEachFeature(feature, layer)
