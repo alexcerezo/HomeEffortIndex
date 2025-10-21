@@ -1,0 +1,11 @@
+<div class="home-layout">
+  <!-- Panel de información (izquierda en desktop, arriba en móvil) -->
+  <div class="home-layout__panel">
+    <app-info-panel [selectedProvince]="selectedProvince"></app-info-panel>
+  </div>
+
+  <!-- Mapa (derecha en desktop, abajo en móvil) -->
+  <div class="home-layout__map">
+    <app-map-viewer (provinceSelected)="onProvinceSelected($event)"></app-map-viewer>
+  </div>
+</div>

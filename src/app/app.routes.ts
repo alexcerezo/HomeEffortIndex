@@ -1,7 +1,7 @@
 import { Routes } from '@angular/router';
-import { MapViewerComponent } from './map-viewer/map-viewer.component';
+import { HomeComponent } from './home/home.component';
 
 export const routes: Routes = [
-  { path: '', component: MapViewerComponent },
+  { path: '', component: HomeComponent },
   { path: '**', redirectTo: '' }
 ];

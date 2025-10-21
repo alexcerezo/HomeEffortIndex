@@ -1,0 +1,29 @@
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.home-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.home-layout__map,
+.home-layout__panel {
+  width: 100%;
+  height: 50%;
+}
+
+@media (min-width: 768px) {
+  .home-layout {
+    flex-direction: row;
+  }
+
+  .home-layout__map,
+  .home-layout__panel {
+    width: 50%;
+    height: 100%;
+  }
+}

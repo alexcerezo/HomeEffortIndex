@@ -1,14 +1,1 @@
 <div id="map" class="w-full h-full"></div>
-
-<!-- Indicador de carga -->
-<div *ngIf="isLoading" class="absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 z-[1000]">
-  <div class="bg-white p-6 rounded-lg shadow-xl">
-    <div class="flex items-center space-x-3">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      <div>
-        <p class="text-lg font-semibold">Cargando GeoJSON...</p>
-        <p class="text-sm text-gray-600">{{ loadingMessage }}</p>
-      </div>
-    </div>
-  </div>
-</div>
