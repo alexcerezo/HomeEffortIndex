@@ -1,26 +1,15 @@
-<div class="w-full h-full bg-gray-50 p-6 overflow-auto">
-  <h1 class="text-2xl font-bold mb-4 text-gray-800">Información de la Provincia</h1>
-  
-  <div *ngIf="selectedProvince" class="bg-white rounded-lg shadow-md p-6">
-    <h2 class="text-xl font-semibold text-blue-600 mb-4">{{ selectedProvince.NUTS_NAME }}</h2>
-    <div class="space-y-3">
-      <div>
-        <span class="font-medium text-gray-600">Código NUTS:</span>
-        <span class="ml-2 font-mono text-sm">{{ selectedProvince.NUTS_ID }}</span>
-      </div>
-      <div>
-        <span class="font-medium text-gray-600">Código País:</span>
-        <span class="ml-2">{{ selectedProvince.CNTR_CODE }}</span>
-      </div>
-      <div>
-        <span class="font-medium text-gray-600">Nivel:</span>
-        <span class="ml-2">{{ selectedProvince.LEVL_CODE }}</span>
-      </div>
-    </div>
-  </div>
+<div class="info-panel">
+  <div class="info-card">
+    <h1 class="info-title" *ngIf="!selectedProvince">
+      Mapa
+    </h1>
 
-  <div *ngIf="!selectedProvince" class="text-center py-12 text-gray-400">
-    <p class="text-lg">Haz clic en una provincia del mapa</p>
-    <p class="text-sm mt-2">para ver su información</p>
+    <h1 class="info-title" *ngIf="selectedProvince">
+      {{ selectedProvince.NUTS_NAME }}, {{ selectedProvince.CNTR_CODE }}
+    </h1>
+
+    <p class="info-description" *ngIf="!selectedProvince">
+      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur sit amet consequat nisl. Sed vitae felis eu metus dignissim finibus non sed nibh.
+    </p>
   </div>
 </div>

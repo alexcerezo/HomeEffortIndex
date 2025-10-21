@@ -25,8 +25,7 @@ export class MapViewerComponent implements AfterViewInit, OnDestroy {
       const leafletModule = await import('leaflet');
       this.L = leafletModule.default || leafletModule;
       
-      this.initMap();
-      await this.loadGeoJSON();
+      await this.initMap();
       this.invalidateMapSize();
     }
   }
@@ -34,22 +33,52 @@ export class MapViewerComponent implements AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     if (this.map) {
       this.map.remove();
+      this.map = null;
     }
   }
 
-  private initMap(): void {
+  private async initMap(): Promise<void> {
+    // Calcular zoom inicial según el ancho de la pantalla
+    const width = window.innerWidth;
+    let initialZoom = 4;
+    
+    if (width < 1350) {
+      initialZoom = 3;  // Móvil pequeño
+    } else {
+      initialZoom = 4;  // Desktop
+    }
+
     this.map = this.L.map('map', {
       attributionControl: false,
       preferCanvas: true,
       inertia: false
-    }).setView([55, 10], 4);
+    }).setView([55, 10], initialZoom);
 
-    this.map.whenReady(() => this.invalidateMapSize());
+    // Esperar a que el mapa esté listo antes de continuar
+    await new Promise<void>((resolve) => {
+      this.map.whenReady(() => {
+        this.invalidateMapSize();
+        resolve();
+      });
+    });
+
+    // Cargar el GeoJSON después de que el mapa esté listo
+    await this.loadGeoJSON();
   }
 
   private async loadGeoJSON(): Promise<void> {
+    const mapInstance = this.map;
+    if (!mapInstance) {
+      return;
+    }
+
     const response = await fetch('/NUTS_3.geojson');
     const data = await response.json();
+
+    // Verificar nuevamente después del fetch asíncrono
+    if (!this.map) {
+      return;
+    }
 
     this.canvasRenderer = this.L.canvas({ padding: 1 });
     this.geojson = this.L.geoJSON(data, {

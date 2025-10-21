@@ -10,13 +10,13 @@
   height: 100vh;
 }
 
-.home-layout__map,
-.home-layout__panel {
+.home-layout__panel,
+.home-layout__map {
   width: 100%;
   height: 50%;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1350px) {
   .home-layout {
     flex-direction: row;
   }
