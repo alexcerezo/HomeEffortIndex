@@ -15,6 +15,7 @@ export class MapViewerComponent implements AfterViewInit, OnDestroy {
   private L: any;
   private geojson: any;
   private provinceColors = new Map<string, string>();
+  private canvasRenderer: any;
 
   constructor(@Inject(PLATFORM_ID) private platformId: object) {}
 
@@ -26,6 +27,7 @@ export class MapViewerComponent implements AfterViewInit, OnDestroy {
       
       this.initMap();
       await this.loadGeoJSON();
+      this.invalidateMapSize();
     }
   }
 
@@ -37,15 +39,21 @@ export class MapViewerComponent implements AfterViewInit, OnDestroy {
 
   private initMap(): void {
     this.map = this.L.map('map', {
-      attributionControl: false
+      attributionControl: false,
+      preferCanvas: true,
+      inertia: false
     }).setView([55, 10], 4);
+
+    this.map.whenReady(() => this.invalidateMapSize());
   }
 
   private async loadGeoJSON(): Promise<void> {
     const response = await fetch('/NUTS_3.geojson');
     const data = await response.json();
 
+    this.canvasRenderer = this.L.canvas({ padding: 1 });
     this.geojson = this.L.geoJSON(data, {
+      renderer: this.canvasRenderer,
       style: (feature: any) => this.style(feature),
       onEachFeature: (feature: any, layer: any) => this.onEachFeature(feature, layer)
     }).addTo(this.map);
@@ -89,11 +97,21 @@ export class MapViewerComponent implements AfterViewInit, OnDestroy {
   private zoomToFeature(e: any): void {
     const province = e.target.feature.properties;
     this.provinceSelected.emit(province);
+    this.invalidateMapSize();
     this.map.fitBounds(e.target.getBounds(), {
       padding: [50, 50],
       maxZoom: 7,
       animate: true,
       duration: 1
     });
+  }
+
+  private invalidateMapSize(): void {
+    if (!this.map) {
+      return;
+    }
+
+    const mapInstance = this.map;
+    setTimeout(() => mapInstance?.invalidateSize(), 0);
   }
 }

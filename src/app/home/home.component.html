@@ -6,6 +6,6 @@
 
   <!-- Mapa (derecha en desktop, abajo en móvil) -->
   <div class="home-layout__map">
-    <app-map-viewer (provinceSelected)="onProvinceSelected($event)"></app-map-viewer>
+    <app-map-viewer ngSkipHydration (provinceSelected)="onProvinceSelected($event)"></app-map-viewer>
   </div>
 </div>

@@ -8,6 +8,7 @@
   background-color: #B8D4E8; /* Azul mar clarito */
   width: 100%;
   height: 100%;
+  outline: none;
 }
 
 /* Eliminar cualquier outline o borde en elementos del mapa */
@@ -20,6 +21,10 @@
 }
 
 :host ::ng-deep path {
+  outline: none !important;
+}
+
+:host ::ng-deep .leaflet-container {
   outline: none !important;
 }
 
