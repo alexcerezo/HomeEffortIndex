@@ -14,7 +14,6 @@ export class MapViewerComponent implements AfterViewInit, OnDestroy {
   private map: any;
   private L: any;
   private geojson: any;
-  private provinceColors = new Map<string, string>();
   private canvasRenderer: any;
   private expenditureData = new Map<string, number>();
   private minExpenditure = Infinity;
@@ -56,6 +55,7 @@ export class MapViewerComponent implements AfterViewInit, OnDestroy {
       for (const [geoCode, index] of Object.entries(geoIndex)) {
         const code = String(geoCode);
         // NUTS 2 codes are typically 4 characters (e.g., ITC4, ES11, DE21)
+        // Exception: Croatian NUTS 2 codes have 5 characters starting with HR0 (e.g., HR02, HR03)
         if (code.length === 4 || (code.length === 5 && code.startsWith('HR0'))) {
           const value = values[String(index)];
           if (value !== undefined && value !== null) {
@@ -160,11 +160,6 @@ export class MapViewerComponent implements AfterViewInit, OnDestroy {
       const expenditure = this.expenditureData.get(id);
       if (expenditure !== undefined) {
         fillColor = this.getColorForExpenditure(expenditure);
-      }
-      
-      // Cache the color
-      if (!this.provinceColors.has(id)) {
-        this.provinceColors.set(id, fillColor);
       }
     }
 
