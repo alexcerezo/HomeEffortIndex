@@ -14,8 +14,10 @@ export class MapViewerComponent implements AfterViewInit, OnDestroy {
   private map: any;
   private L: any;
   private geojson: any;
-  private provinceColors = new Map<string, string>();
   private canvasRenderer: any;
+  private expenditureData = new Map<string, number>();
+  private minExpenditure = Infinity;
+  private maxExpenditure = -Infinity;
 
   constructor(@Inject(PLATFORM_ID) private platformId: object) {}
 
@@ -24,6 +26,9 @@ export class MapViewerComponent implements AfterViewInit, OnDestroy {
       // Importar Leaflet dinámicamente
       const leafletModule = await import('leaflet');
       this.L = leafletModule.default || leafletModule;
+      
+      // Load expenditure data
+      await this.loadExpenditureData();
       
       await this.initMap();
       this.invalidateMapSize();
@@ -35,6 +40,58 @@ export class MapViewerComponent implements AfterViewInit, OnDestroy {
       this.map.remove();
       this.map = null;
     }
+  }
+
+  private async loadExpenditureData(): Promise<void> {
+    try {
+      const response = await fetch('/lifecost.json');
+      const data = await response.json();
+      
+      // Map geo codes to their indices and then to expenditure values
+      const geoIndex = data.dimension.geo.category.index;
+      const values = data.value;
+      
+      // Process only NUTS 2 regions (codes with exactly 4 characters)
+      for (const [geoCode, index] of Object.entries(geoIndex)) {
+        const code = String(geoCode);
+        // NUTS 2 codes are typically 4 characters (e.g., ITC4, ES11, DE21)
+        // Exception: Croatian NUTS 2 codes have 5 characters starting with HR0 (e.g., HR02, HR03)
+        if (code.length === 4 || (code.length === 5 && code.startsWith('HR0'))) {
+          const value = values[String(index)];
+          if (value !== undefined && value !== null) {
+            this.expenditureData.set(code, Number(value));
+            this.minExpenditure = Math.min(this.minExpenditure, Number(value));
+            this.maxExpenditure = Math.max(this.maxExpenditure, Number(value));
+          }
+        }
+      }
+      
+      console.log(`Loaded expenditure data for ${this.expenditureData.size} NUTS2 regions`);
+      console.log(`Min: ${this.minExpenditure}%, Max: ${this.maxExpenditure}%`);
+    } catch (error) {
+      console.error('Error loading expenditure data:', error);
+    }
+  }
+
+  /**
+   * Get color based on expenditure percentage
+   * Uses a gradient from green (low) to yellow (medium) to red (high)
+   * @param value The expenditure percentage
+   * @returns HSL color string
+   */
+  private getColorForExpenditure(value: number): string {
+    if (this.minExpenditure === Infinity || this.maxExpenditure === -Infinity) {
+      return '#cccccc'; // Gray for missing data
+    }
+    
+    // Normalize value between 0 and 1
+    const normalized = (value - this.minExpenditure) / (this.maxExpenditure - this.minExpenditure);
+    
+    // Color scale: green (120°) -> yellow (60°) -> red (0°)
+    // Lower expenditure = better (green), higher = worse (red)
+    const hue = 120 * (1 - normalized); // 120 for green, 0 for red
+    
+    return `hsl(${hue}, 70%, 50%)`;
   }
 
   private async initMap(): Promise<void> {
@@ -96,16 +153,21 @@ export class MapViewerComponent implements AfterViewInit, OnDestroy {
 
   private style(feature: any): any {
     const id = feature.properties?.NUTS_ID;
-    if (id && !this.provinceColors.has(id)) {
-      const hue = Math.floor(Math.random() * 360);
-      this.provinceColors.set(id, `hsl(${hue}, 70%, 50%)`);
+    
+    let fillColor = '#cccccc'; // Default gray for missing data
+    
+    if (id) {
+      const expenditure = this.expenditureData.get(id);
+      if (expenditure !== undefined) {
+        fillColor = this.getColorForExpenditure(expenditure);
+      }
     }
 
     return {
-      fillColor: this.provinceColors.get(id),
+      fillColor: fillColor,
       weight: 0.5,
       opacity: 1,
-      color: this.provinceColors.get(id),
+      color: '#666666', // Border color
       fillOpacity: 0.7
     };
   }
