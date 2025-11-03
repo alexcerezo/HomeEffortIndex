@@ -1,5 +1,32 @@
 # HomeEffortIndex
 
+A visual representation of housing affordability across European NUTS2 regions, showing the years of work needed to buy a house based on regional salaries and national housing prices.
+
+## Overview
+
+This interactive map visualizes housing affordability across Europe using:
+- **NUTS2 regional salary data** from EUROSTAT (2020)
+- **National housing price indices** from EUROSTAT (2020)
+
+The calculation methodology:
+1. Calculates national average salaries from NUTS2 regional data
+2. Computes regional salary ratios (regional_salary / national_average)
+3. Estimates regional housing prices (national_price × regional_ratio)
+4. Calculates years needed to buy a house (regional_housing_price / regional_salary)
+
+Regions are color-coded:
+- 🟢 **Green**: Fewer years needed (more affordable)
+- 🟡 **Yellow**: Moderate years needed
+- 🔴 **Red**: More years needed (less affordable)
+
+## Data Processing
+
+The data processing script (`/tmp/process_housing_data.py`) transforms raw EUROSTAT data into the housing affordability index. For countries without housing price data, the European average is used.
+
+Generated file: `public/housing_affordability.json`
+
+## Project Structure
+
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.6.
 
 ## Development server
