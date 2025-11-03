@@ -75,6 +75,43 @@
   letter-spacing: 0.05em;
 }
 
+.info-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border-radius: 1rem;
+  border-left: 4px solid #4f46e5;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #4f46e5;
+}
+
+.info-note {
+  font-size: 1rem;
+  color: #94a3b8;
+  font-style: italic;
+  margin: 0;
+}
+
 @media (min-width: 1350px) {
   .info-panel {
     padding: 2.5rem;

@@ -1,7 +1,7 @@
 <div class="info-panel">
   <div class="info-card">
     <h1 class="info-title" *ngIf="!selectedProvince">
-      Mapa
+      Índice de Esfuerzo para la Vivienda
     </h1>
 
     <h1 class="info-title" *ngIf="selectedProvince">
@@ -9,7 +9,22 @@
     </h1>
 
     <p class="info-description" *ngIf="!selectedProvince">
-      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur sit amet consequat nisl. Sed vitae felis eu metus dignissim finibus non sed nibh.
+      Este mapa muestra los años de trabajo necesarios para comprar una vivienda en cada región NUTS2 de Europa, calculado a partir de los salarios regionales y los precios de la vivienda por país (datos de 2020).
+    </p>
+
+    <div class="info-stats" *ngIf="selectedProvince && selectedProvince.years_to_buy">
+      <div class="stat-item">
+        <span class="stat-label">Años para comprar una casa:</span>
+        <span class="stat-value">{{ selectedProvince.years_to_buy.toFixed(2) }} años</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Región:</span>
+        <span class="stat-value">{{ selectedProvince.NUTS_ID }}</span>
+      </div>
+    </div>
+
+    <p class="info-note" *ngIf="selectedProvince && !selectedProvince.years_to_buy">
+      No hay datos disponibles para esta región.
     </p>
   </div>
 </div>

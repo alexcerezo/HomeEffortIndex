@@ -15,9 +15,9 @@ export class MapViewerComponent implements AfterViewInit, OnDestroy {
   private L: any;
   private geojson: any;
   private canvasRenderer: any;
-  private expenditureData = new Map<string, number>();
-  private minExpenditure = Infinity;
-  private maxExpenditure = -Infinity;
+  private affordabilityData = new Map<string, number>();
+  private minYears = Infinity;
+  private maxYears = -Infinity;
 
   constructor(@Inject(PLATFORM_ID) private platformId: object) {}
 
@@ -27,8 +27,8 @@ export class MapViewerComponent implements AfterViewInit, OnDestroy {
       const leafletModule = await import('leaflet');
       this.L = leafletModule.default || leafletModule;
       
-      // Load expenditure data
-      await this.loadExpenditureData();
+      // Load housing affordability data
+      await this.loadAffordabilityData();
       
       await this.initMap();
       this.invalidateMapSize();
@@ -42,53 +42,49 @@ export class MapViewerComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  private async loadExpenditureData(): Promise<void> {
+  private async loadAffordabilityData(): Promise<void> {
     try {
-      const response = await fetch('/lifecost.json');
+      const response = await fetch('/housing_affordability.json');
       const data = await response.json();
       
-      // Map geo codes to their indices and then to expenditure values
+      // Map geo codes to their indices and then to years values
       const geoIndex = data.dimension.geo.category.index;
       const values = data.value;
       
-      // Process only NUTS 2 regions (codes with exactly 4 characters)
+      // Process all NUTS2 regions
       for (const [geoCode, index] of Object.entries(geoIndex)) {
         const code = String(geoCode);
-        // NUTS 2 codes are typically 4 characters (e.g., ITC4, ES11, DE21)
-        // Exception: Croatian NUTS 2 codes have 5 characters starting with HR0 (e.g., HR02, HR03)
-        if (code.length === 4 || (code.length === 5 && code.startsWith('HR0'))) {
-          const value = values[String(index)];
-          if (value !== undefined && value !== null) {
-            this.expenditureData.set(code, Number(value));
-            this.minExpenditure = Math.min(this.minExpenditure, Number(value));
-            this.maxExpenditure = Math.max(this.maxExpenditure, Number(value));
-          }
+        const value = values[String(index)];
+        if (value !== undefined && value !== null) {
+          this.affordabilityData.set(code, Number(value));
+          this.minYears = Math.min(this.minYears, Number(value));
+          this.maxYears = Math.max(this.maxYears, Number(value));
         }
       }
       
-      console.log(`Loaded expenditure data for ${this.expenditureData.size} NUTS2 regions`);
-      console.log(`Min: ${this.minExpenditure}%, Max: ${this.maxExpenditure}%`);
+      console.log(`Loaded housing affordability data for ${this.affordabilityData.size} NUTS2 regions`);
+      console.log(`Min: ${this.minYears.toFixed(2)} years, Max: ${this.maxYears.toFixed(2)} years`);
     } catch (error) {
-      console.error('Error loading expenditure data:', error);
+      console.error('Error loading housing affordability data:', error);
     }
   }
 
   /**
-   * Get color based on expenditure percentage
+   * Get color based on years needed to buy a house
    * Uses a gradient from green (low) to yellow (medium) to red (high)
-   * @param value The expenditure percentage
+   * @param value The years needed to buy a house
    * @returns HSL color string
    */
-  private getColorForExpenditure(value: number): string {
-    if (this.minExpenditure === Infinity || this.maxExpenditure === -Infinity) {
+  private getColorForAffordability(value: number): string {
+    if (this.minYears === Infinity || this.maxYears === -Infinity) {
       return '#cccccc'; // Gray for missing data
     }
     
     // Normalize value between 0 and 1
-    const normalized = (value - this.minExpenditure) / (this.maxExpenditure - this.minExpenditure);
+    const normalized = (value - this.minYears) / (this.maxYears - this.minYears);
     
     // Color scale: green (120°) -> yellow (60°) -> red (0°)
-    // Lower expenditure = better (green), higher = worse (red)
+    // Fewer years = better (green), more years = worse (red)
     const hue = 120 * (1 - normalized); // 120 for green, 0 for red
     
     return `hsl(${hue}, 70%, 50%)`;
@@ -157,9 +153,9 @@ export class MapViewerComponent implements AfterViewInit, OnDestroy {
     let fillColor = '#cccccc'; // Default gray for missing data
     
     if (id) {
-      const expenditure = this.expenditureData.get(id);
-      if (expenditure !== undefined) {
-        fillColor = this.getColorForExpenditure(expenditure);
+      const years = this.affordabilityData.get(id);
+      if (years !== undefined) {
+        fillColor = this.getColorForAffordability(years);
       }
     }
 
@@ -193,7 +189,16 @@ export class MapViewerComponent implements AfterViewInit, OnDestroy {
 
   private zoomToFeature(e: any): void {
     const province = e.target.feature.properties;
-    this.provinceSelected.emit(province);
+    const nuts_id = province.NUTS_ID;
+    const years = this.affordabilityData.get(nuts_id);
+    
+    // Add years data to province object
+    const enrichedProvince = {
+      ...province,
+      years_to_buy: years
+    };
+    
+    this.provinceSelected.emit(enrichedProvince);
     this.invalidateMapSize();
     this.map.fitBounds(e.target.getBounds(), {
       padding: [50, 50],
