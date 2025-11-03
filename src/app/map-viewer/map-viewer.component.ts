@@ -48,6 +48,7 @@ export class MapViewerComponent implements AfterViewInit, OnDestroy {
       const data = await response.json();
       
       // Map geo codes to their indices and then to years values
+      // Note: housing_affordability.json is pre-filtered to contain only NUTS2 regions
       const geoIndex = data.dimension.geo.category.index;
       const values = data.value;
       
